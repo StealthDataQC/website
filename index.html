@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataSeal — Coming 2026</title>
+  <meta name="description" content="DataSeal is coming in 2026. Stay tuned for something new.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300&family=Sora:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, 'Helvetica Neue', sans-serif;
+      background-color: #e3e6de;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      position: relative;
+    }
+
+    /* ── interactive canvas backdrop ── */
+    canvas#bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── soft radial glow behind text ── */
+    .glow {
+      position: fixed;
+      width: 55vmax;
+      height: 55vmax;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(162,178,160,0.3) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      pointer-events: none;
+      animation: pulse-glow 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse-glow {
+      0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.08); }
+    }
+
+    /* ── content ── */
+    .container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 2rem;
+      animation: fade-up 2s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 0.3s;
+    }
+
+    .brand {
+      font-family: 'Sora', 'Outfit', sans-serif;
+      font-size: clamp(2.6rem, 7vw, 4.5rem);
+      font-weight: 600;
+      color: #262b36;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+    }
+
+    .tagline {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(0.95rem, 2.2vw, 1.25rem);
+      font-weight: 300;
+      color: #7c8490;
+      margin-top: 1rem;
+      letter-spacing: 0.12em;
+      text-transform: lowercase;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="glow"></div>
+
+  <main class="container">
+    <h1 class="brand">DataSeal</h1>
+    <p class="tagline">coming 2026</p>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('bg');
+      const ctx = canvas.getContext('2d');
+      let W, H;
+      let mouseX = -9999, mouseY = -9999;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      /* ── nodes ── */
+      const NODE_COUNT = 100;
+      const CONNECT_DIST = 160;
+      const MOUSE_RADIUS = 200;
+      const nodes = [];
+
+      function resize() {
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function createNode() {
+        return {
+          x: Math.random() * W,
+          y: Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          r: Math.random() * 2.2 + 1.0,
+          baseAlpha: Math.random() * 0.3 + 0.2,
+        };
+      }
+
+      function init() {
+        resize();
+        nodes.length = 0;
+        for (let i = 0; i < NODE_COUNT; i++) nodes.push(createNode());
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        for (let i = 0; i < nodes.length; i++) {
+          const a = nodes[i];
+
+          /* drift */
+          a.x += a.vx;
+          a.y += a.vy;
+
+          /* wrap edges */
+          if (a.x < -10) a.x = W + 10;
+          if (a.x > W + 10) a.x = -10;
+          if (a.y < -10) a.y = H + 10;
+          if (a.y > H + 10) a.y = -10;
+
+          /* subtle mouse repulsion */
+          const dmx = a.x - mouseX;
+          const dmy = a.y - mouseY;
+          const dm = Math.sqrt(dmx * dmx + dmy * dmy);
+          if (dm < MOUSE_RADIUS && dm > 0) {
+            const force = (1 - dm / MOUSE_RADIUS) * 0.6;
+            a.x += (dmx / dm) * force;
+            a.y += (dmy / dm) * force;
+          }
+
+          /* draw node */
+          ctx.beginPath();
+          ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(120, 140, 130, ${a.baseAlpha})`;
+          ctx.fill();
+
+          /* draw connections */
+          for (let j = i + 1; j < nodes.length; j++) {
+            const b = nodes[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < CONNECT_DIST) {
+              const alpha = (1 - dist / CONNECT_DIST) * 0.18;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = `rgba(120, 140, 130, ${alpha})`;
+              ctx.lineWidth = 0.8;
+              ctx.stroke();
+            }
+          }
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      /* ── events ── */
+      window.addEventListener('resize', () => { resize(); });
+      window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; }
+      }, { passive: true });
+      window.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999; });
+
+      init();
+      draw();
+    })();
+  </script>
+</body>
+</html>
